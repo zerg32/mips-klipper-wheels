@@ -15,7 +15,7 @@ jobs:
 
       - name: setup wheels folder
         run: |
-          sudo mkdir /mnt/mipsel-root/root/wheels
+          sudo mkdir -p /mnt/mipsel-root/root/wheels
           sudo chmod -R a+rX /mnt/mipsel-root/root/wheels
           sudo chown -R $USER:$USER /mnt/mipsel-root/root/wheels
           ls -la /mnt/mipsel-root/root/wheels/
