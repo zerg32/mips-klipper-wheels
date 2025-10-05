@@ -17,6 +17,8 @@ RUN apt update && apt install -y \
   curl \
   ca-certificates
 
+RUN update-binfmts --enable qemu-mips
+
 # Create MIPSEL rootfs directory
 RUN mkdir -p /mnt/mipsel-root
 
