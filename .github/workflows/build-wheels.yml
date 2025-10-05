@@ -1,0 +1,96 @@
+name: Build MIPS Python Wheels
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-wheels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Generate cache key based on chroot setup script content
+      - name: Generate cache key
+        id: cache-key
+        run: echo "key=$(sha256sum scripts/chroot-setup.sh scripts/builder-setup.sh | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      # Try to restore chroot environment from cache
+      - name: Restore chroot cache
+        id: cache-chroot
+        uses: actions/cache@v3
+        with:
+          path: |
+            /mnt/mipsel-root
+            !/mnt/mipsel-root/proc/**
+            !/mnt/mipsel-root/sys/**
+            !/mnt/mipsel-root/dev/**
+          key: mipsel-chroot-${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            mipsel-chroot-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qemu-user-static \
+            binfmt-support \
+            debootstrap \
+            systemd \
+            procps \
+            iproute2
+
+      - name: Make scripts executable
+        run: |
+          chmod +x make-scripts-executable.sh
+          ./make-scripts-executable.sh
+
+      # Only run setup if cache miss
+      - name: Setup MIPS chroot environment
+        if: steps.cache-chroot.outputs.cache-hit != 'true'
+        run: |
+          sudo ./scripts/chroot-setup.sh
+          # Remove any potentially cached dynamic/temporary files
+          sudo rm -rf /mnt/mipsel-root/tmp/*
+          sudo rm -rf /mnt/mipsel-root/var/cache/apt/*
+          sudo rm -rf /mnt/mipsel-root/var/lib/apt/lists/*
+
+      # Only run setup if cache miss
+      - name: Setup build environment
+        if: steps.cache-chroot.outputs.cache-hit != 'true'
+        run: sudo ./scripts/builder-setup.sh
+
+      # Always ensure QEMU is properly setup
+      - name: Ensure QEMU setup
+        run: |
+          sudo cp /usr/bin/qemu-mipsel-static /mnt/mipsel-root/usr/bin/
+          sudo update-binfmts --enable qemu-mips
+
+      - name: Build Klipper wheels
+        run: sudo ./scripts/klipper-build.sh
+
+      - name: Build Moonraker wheels
+        run: sudo ./scripts/moonraker-build.sh
+
+      - name: List built wheels
+        run: |
+          echo "Klipper and Moonraker wheels:"
+          sudo ls -l /mnt/mipsel-root/root/wheels/
+
+      - name: Upload wheels artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: mipsel-python-wheels
+          path: /mnt/mipsel-root/root/wheels/
+          if-no-files-found: error
+
+      - name: Cleanup
+        if: always()
+        run: |
+          sudo umount -l /mnt/mipsel-root/proc || true
+          sudo umount -l /mnt/mipsel-root/sys || true
+          sudo umount -l /mnt/mipsel-root/dev || true
+          sudo rm -rf /mnt/mipsel-root
