@@ -17,7 +17,7 @@ RUN apt update && apt install -y \
   curl \
   ca-certificates
 
-RUN update-binfmts --enable qemu-mips
+#RUN update-binfmts --enable qemu-mips
 
 # Create MIPSEL rootfs directory
 RUN mkdir -p /mnt/mipsel-root
@@ -29,10 +29,10 @@ RUN debootstrap --arch=mipsel --foreign bookworm /mnt/mipsel-root http://deb.deb
 RUN cp /usr/bin/qemu-mipsel-static /mnt/mipsel-root/usr/bin/
 
 # Complete second stage of debootstrap
-RUN chroot /mnt/mipsel-root /debootstrap/debootstrap --second-stage
+RUN chroot /mnt/mipsel-root /usr/bin/qemu-mipsel-static /debootstrap/debootstrap --second-stage
 
 # Optional: Add a user inside chroot
-RUN chroot /mnt/mipsel-root useradd -m -s /bin/bash mipsuser && \
+RUN chroot  /mnt/mipsel-root /usr/bin/qemu-mipsel-static useradd -m -s /bin/bash mipsuser && \
     echo "mipsuser:mips" | chroot /mnt/mipsel-root chpasswd
 
 # Set working directory
