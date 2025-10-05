@@ -81,11 +81,12 @@ jobs:
           sudo ls -l /mnt/mipsel-root/root/wheels/
 
       - name: Upload wheels artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mipsel-python-wheels
           path: /mnt/mipsel-root/root/wheels/
           if-no-files-found: error
+          retention-days: 90
 
       - name: Cleanup
         if: always()
