@@ -46,9 +46,7 @@ jobs:
           sudo rm -rf /mnt/mipsel-root/var/cache/apt/*
           sudo rm -rf /mnt/mipsel-root/var/lib/apt/lists/*
 
-      # Only run setup if cache miss
       - name: Setup build environment
-        if: steps.cache-chroot.outputs.cache-hit != 'true'
         run: sudo ./scripts/builder-setup.sh
 
       - name: Build Klipper wheels
@@ -64,6 +62,25 @@ jobs:
           path: /mnt/mipsel-root/root/wheels/
           if-no-files-found: error
           retention-days: 90
+
+      - name: Prepare wheels for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Create pages directory
+          sudo mkdir -p wheels-page
+          # Copy wheels
+          sudo cp /mnt/mipsel-root/root/wheels/*.whl wheels-page/
+          # Generate index
+          sudo chmod +x scripts/generate-index.sh
+          sudo ./scripts/generate-index.sh wheels-page
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: wheels-page
+          target-folder: wheels
+          clean: true
 
       - name: Cleanup
         if: always()
