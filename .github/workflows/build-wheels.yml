@@ -13,24 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Generate cache key based on chroot setup script content
-      - name: Generate cache key
-        id: cache-key
-        run: echo "key=$(sha256sum scripts/chroot-setup.sh scripts/builder-setup.sh | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
-      # Try to restore chroot environment from cache
-      - name: Restore chroot cache
-        id: cache-chroot
-        uses: actions/cache@v3
-        with:
-          path: |
-            /mnt/mipsel-root
-            !/mnt/mipsel-root/proc/**
-            !/mnt/mipsel-root/sys/**
-            !/mnt/mipsel-root/dev/**
-          key: mipsel-chroot-${{ steps.cache-key.outputs.key }}
-          restore-keys: |
-            mipsel-chroot-
+      - name: setup wheels folder
+        run: |
+          sudo mkdir /mnt/mipsel-root/root/wheels
+          sudo chmod -R a+rX /mnt/mipsel-root/root/wheels
+          sudo chown -R $USER:$USER /mnt/mipsel-root/root/wheels
+          ls -la /mnt/mipsel-root/root/wheels/
 
       - name: Install system dependencies
         run: |
@@ -63,23 +51,11 @@ jobs:
         if: steps.cache-chroot.outputs.cache-hit != 'true'
         run: sudo ./scripts/builder-setup.sh
 
-      # Always ensure QEMU is properly setup
-      - name: Ensure QEMU setup
-        run: |
-          sudo cp /usr/bin/qemu-mipsel-static /mnt/mipsel-root/usr/bin/
-          sudo update-binfmts --enable qemu-mips
-
       - name: Build Klipper wheels
         run: sudo ./scripts/klipper-build.sh
 
       - name: Build Moonraker wheels
         run: sudo ./scripts/moonraker-build.sh
-
-      - name: List built wheels
-        run: |
-          echo "Klipper and Moonraker wheels:"
-          sudo ls -l /mnt/mipsel-root/root/wheels/
-          sudo chmod -R a+rX /mnt/mipsel-root/root/wheels
 
       - name: Upload wheels artifacts
         uses: actions/upload-artifact@v4
