@@ -52,8 +52,8 @@ jobs:
       - name: Build Klipper wheels
         run: sudo ./scripts/klipper-build.sh
 
-#      - name: Build Moonraker wheels
-#        run: sudo ./scripts/moonraker-build.sh
+      - name: Build Moonraker wheels
+        run: sudo ./scripts/moonraker-build.sh
 
       - name: Upload wheels artifacts
         uses: actions/upload-artifact@v4
