@@ -52,8 +52,8 @@ jobs:
       - name: Build Klipper wheels
         run: sudo ./scripts/klipper-build.sh
 
-      - name: Build Moonraker wheels
-        run: sudo ./scripts/moonraker-build.sh
+#      - name: Build Moonraker wheels
+#        run: sudo ./scripts/moonraker-build.sh
 
       - name: Upload wheels artifacts
         uses: actions/upload-artifact@v4
@@ -66,13 +66,16 @@ jobs:
       - name: Prepare wheels for GitHub Pages
         if: github.ref == 'refs/heads/main'
         run: |
+          sudo chmod -R a+rX /mnt/mipsel-root/root/wheels
+          sudo chown -R $USER:$USER /mnt/mipsel-root/root/wheels
+          ls -la /mnt/mipsel-root/root/wheels/
           # Create pages directory
-          sudo mkdir -p wheels-page
+          mkdir -p wheels-page
           # Copy wheels
-          sudo cp /mnt/mipsel-root/root/wheels/*.whl wheels-page/
+          cp /mnt/mipsel-root/root/wheels/*.whl wheels-page/
           # Generate index
-          sudo chmod +x scripts/generate-index.sh
-          sudo ./scripts/generate-index.sh wheels-page
+          chmod +x scripts/generate-index.sh
+          ./scripts/generate-index.sh wheels-page
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
