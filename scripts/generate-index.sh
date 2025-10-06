@@ -33,19 +33,20 @@ cat > "$SIMPLE_DIR/index.html" << EOF
 <body>
 EOF
 
-# Process wheels and create package directories
-find "$OUTPUT_DIR" -name "*.whl" | sort | while read wheel; do
+# Create associative array to track processed packages
+declare -A processed_packages
+
+# First pass: Create package directories and initial index files
+find "$OUTPUT_DIR" -name "*.whl" | while read wheel; do
     filename=$(basename "$wheel")
-    # Extract package name from wheel filename (package_name-version-etc.whl)
     package_name=$(echo "$filename" | cut -d'-' -f1 | tr '_' '-' | tr '[:upper:]' '[:lower:]')
     package_dir="$SIMPLE_DIR/$package_name"
     
     # Create package directory if it doesn't exist
-    mkdir -p "$package_dir"
-    
-    # Create or update package index
-    if [ ! -f "$package_dir/index.html" ]; then
-        cat > "$package_dir/index.html" << EOF2
+    if [ ! -d "$package_dir" ]; then
+        mkdir -p "$package_dir"
+        # Create initial package index
+        cat > "$package_dir/index.html" << EOF
 <!DOCTYPE html>
 <html>
 <head>
@@ -54,15 +55,26 @@ find "$OUTPUT_DIR" -name "*.whl" | sort | while read wheel; do
 </head>
 <body>
     <h1>Links for $package_name</h1>
-EOF2
+EOF
+    fi
+done
+
+# Second pass: Add wheel links to package indices
+find "$OUTPUT_DIR" -name "*.whl" | sort | while read wheel; do
+    filename=$(basename "$wheel")
+    package_name=$(echo "$filename" | cut -d'-' -f1 | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    package_dir="$SIMPLE_DIR/$package_name"
+    wheel_hash=$(sha256sum "$wheel" | cut -d' ' -f1)
+    
+    # Add wheel link to package index if it doesn't exist
+    if ! grep -q "$filename#sha256=$wheel_hash" "$package_dir/index.html"; then
+        echo "    <a href=\"../../$filename#sha256=$wheel_hash\" data-requires-python=\"&gt;=3.7\">$filename</a><br/>" >> "$package_dir/index.html"
     fi
     
-    # Add wheel link to package index
-    echo "    <a href=\"../../$filename#sha256=$(sha256sum "$wheel" | cut -d' ' -f1)\" data-requires-python=\"&gt;=3.7\">$filename</a><br/>" >> "$package_dir/index.html"
-    
-    # Add package to main simple index if not already there
-    if ! grep -q "\"$package_name\"" "$SIMPLE_DIR/index.html"; then
+    # Add package to main simple index if not already processed
+    if [ -z "${processed_packages[$package_name]}" ]; then
         echo "    <a href=\"$package_name/\">$package_name</a><br/>" >> "$SIMPLE_DIR/index.html"
+        processed_packages[$package_name]=1
     fi
 done
 
