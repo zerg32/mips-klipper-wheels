@@ -18,6 +18,7 @@ chroot /mnt/mipsel-root apt install -y \
   libssl-dev \
   libcurl4-openssl-dev \
   ca-certificates \
+  autoconf automake libtool m4 gettext \
   cmake \
   libffi-dev \
   libxml2-dev \
