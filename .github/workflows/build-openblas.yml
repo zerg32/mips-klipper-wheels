@@ -1,0 +1,122 @@
+name: Build OpenBLAS for MIPSEL
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'scripts/openblas-build.sh'
+      - '.github/workflows/build-openblas.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/openblas-build.sh'
+      - '.github/workflows/build-openblas.yml'
+  workflow_dispatch:
+
+jobs:
+  build-openblas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup output folders
+        run: |
+          sudo mkdir -p /mnt/mipsel-root/root/debs
+          sudo chmod -R a+rX /mnt/mipsel-root/root/debs
+          sudo chown -R $USER:$USER /mnt/mipsel-root/root/debs
+          ls -la /mnt/mipsel-root/root/
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qemu-user-static \
+            binfmt-support \
+            debootstrap \
+            systemd \
+            procps \
+            iproute2
+
+      - name: Make scripts executable
+        run: |
+          chmod +x make-scripts-executable.sh
+          ./make-scripts-executable.sh
+
+      - name: Setup MIPS chroot environment
+        run: |
+          sudo ./scripts/chroot-setup.sh
+          # Clean up temporary files
+          sudo rm -rf /mnt/mipsel-root/tmp/*
+          sudo rm -rf /mnt/mipsel-root/var/cache/apt/*
+          sudo rm -rf /mnt/mipsel-root/var/lib/apt/lists/*
+
+      - name: Setup build environment
+        run: sudo ./scripts/builder-setup.sh
+
+      - name: Build OpenBLAS
+        run: sudo ./scripts/openblas-build.sh
+
+      - name: Upload OpenBLAS package
+        uses: actions/upload-artifact@v4
+        with:
+          name: libopenblas-dev-mipsel
+          path: /mnt/mipsel-root/root/debs/*.deb
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Prepare packages for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          sudo chmod -R a+rX /mnt/mipsel-root/root/debs
+          sudo chown -R $USER:$USER /mnt/mipsel-root/root/debs
+          ls -la /mnt/mipsel-root/root/debs/
+          # Create pages directory
+          mkdir -p debs-page
+          # Copy packages
+          cp /mnt/mipsel-root/root/debs/*.deb debs-page/
+          # Create simple index
+          cd debs-page
+          cat > index.html <<EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>MIPSEL OpenBLAS Packages</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; }
+                  h1 { color: #333; }
+                  ul { list-style-type: none; padding: 0; }
+                  li { margin: 10px 0; }
+                  a { text-decoration: none; color: #0366d6; }
+                  a:hover { text-decoration: underline; }
+              </style>
+          </head>
+          <body>
+              <h1>OpenBLAS Debian Packages for MIPSEL</h1>
+              <ul>
+          EOF
+          for file in *.deb; do
+              echo "        <li><a href=\"$file\">$file</a></li>" >> index.html
+          done
+          cat >> index.html <<EOF
+              </ul>
+              <hr>
+              <p>Built from source for MIPSEL architecture</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: debs-page
+          target-folder: openblas-debs
+          clean: true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          sudo umount -l /mnt/mipsel-root/proc || true
+          sudo umount -l /mnt/mipsel-root/sys || true
+          sudo umount -l /mnt/mipsel-root/dev || true
+          sudo rm -rf /mnt/mipsel-root
