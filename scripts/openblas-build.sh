@@ -43,6 +43,33 @@ fi
 cat debian/control
 '
 
+# Patch source files to fix MIPS compilation issues
+chroot /mnt/mipsel-root bash -c '
+cd /root/openblas-build/openblas-*
+
+# Fix missing GEMM_MULTITHREAD_THRESHOLD macro
+echo "Patching source to fix GEMM_MULTITHREAD_THRESHOLD..."
+find . -name "gemv.c" -o -name "gemm.c" | while read file; do
+  if grep -q "GEMM_MULTITHREAD_THRESHOLD" "$file" && ! grep -q "#ifndef GEMM_MULTITHREAD_THRESHOLD" "$file"; then
+    # Add default definition if not present
+    sed -i "1i\\
+#ifndef GEMM_MULTITHREAD_THRESHOLD\\
+#define GEMM_MULTITHREAD_THRESHOLD 4\\
+#endif" "$file"
+    echo "Patched: $file"
+  fi
+done
+
+# Alternative: patch the common.h or param.h if they exist
+if [ -f common.h ]; then
+  if ! grep -q "GEMM_MULTITHREAD_THRESHOLD" common.h; then
+    echo "#ifndef GEMM_MULTITHREAD_THRESHOLD" >> common.h
+    echo "#define GEMM_MULTITHREAD_THRESHOLD 4" >> common.h
+    echo "#endif" >> common.h
+  fi
+fi
+'
+
 # Install build dependencies for OpenBLAS
 chroot /mnt/mipsel-root bash -c '
 cd /root/openblas-build/openblas-*
@@ -64,9 +91,11 @@ echo "Building OpenBLAS for MIPSEL..."
 export DEB_BUILD_OPTIONS="parallel=$(nproc) nocheck"
 export OPENBLAS_TARGET=MIPS24K
 export OPENBLAS_DYNAMIC_ARCH=0
+# Add CFLAGS to define missing macros
+export DEB_CFLAGS_APPEND="-DGEMM_MULTITHREAD_THRESHOLD=4"
 
 # Build binary packages only
-dpkg-buildpackage -b -uc -us -nc 2>&1 | tee /root/openblas-build/build.log
+dpkg-buildpackage -b -uc -us 2>&1 | tee /root/openblas-build/build.log
 
 # Check if build was successful
 if [ ${PIPESTATUS[0]} -ne 0 ]; then
