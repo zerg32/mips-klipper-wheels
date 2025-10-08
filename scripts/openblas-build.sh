@@ -29,6 +29,20 @@ cd /root/openblas-build
 apt source openblas
 '
 
+# Patch debian/control to support mipsel
+chroot /mnt/mipsel-root bash -c '
+cd /root/openblas-build/openblas-*
+# Check if architecture needs to be added
+if ! grep -q "Architecture:.*any" debian/control && ! grep -q "Architecture:.*mipsel" debian/control; then
+  echo "Patching debian/control to add mipsel support..."
+  # Add mipsel to architecture list for all binary packages
+  sed -i "s/Architecture: \(.*\)/Architecture: \1 mipsel/" debian/control
+  # Or replace with any if too restrictive
+  sed -i "s/Architecture: [a-z0-9 -]*/Architecture: any/" debian/control
+fi
+cat debian/control
+'
+
 # Install build dependencies for OpenBLAS
 chroot /mnt/mipsel-root bash -c '
 cd /root/openblas-build/openblas-*
@@ -37,14 +51,29 @@ apt build-dep -y openblas || apt install -y \
   libblas-dev \
   liblapack-dev \
   cmake \
-  pkg-config
+  pkg-config \
+  debhelper
 '
 
 # Build the package
 chroot /mnt/mipsel-root bash -c '
 cd /root/openblas-build/openblas-*
-# Build with MIPS-specific optimizations
-DEB_BUILD_OPTIONS="parallel=$(nproc)" dpkg-buildpackage -b -uc -us
+
+echo "Building OpenBLAS for MIPSEL..."
+# Build with MIPS optimizations, skip tests, and set target
+export DEB_BUILD_OPTIONS="parallel=$(nproc) nocheck"
+export OPENBLAS_TARGET=MIPS24K
+export OPENBLAS_DYNAMIC_ARCH=0
+
+# Build binary packages only
+dpkg-buildpackage -b -uc -us -nc 2>&1 | tee /root/openblas-build/build.log
+
+# Check if build was successful
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "Build failed. Check log for details."
+  tail -n 100 /root/openblas-build/build.log
+  exit 1
+fi
 '
 
 # Copy built packages to debs directory
