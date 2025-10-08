@@ -17,10 +17,23 @@ chroot /mnt/mipsel-root apt install -y \
   gfortran liblapack-dev libblas-dev pkg-config \
   libssl-dev \
   libcurl4-openssl-dev \
-  ca-certificates
+  ca-certificates \
+  cmake \
+  libffi-dev \
+  libxml2-dev \
+  libxslt1-dev \
+  zlib1g-dev \
+  libjpeg-dev \
+  libpng-dev \
+  libfreetype6-dev
 
-
-# libopenblas-dev  - not available for MIPSEL
+# Install custom OpenBLAS if available (better performance than ATLAS)
+#if [ -f /mnt/mipsel-root/root/debs/libopenblas-dev_*.deb ]; then
+#  echo "Installing custom OpenBLAS package..."
+#  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-dev_*.deb || apt-get install -f -y'
+#else
+#  echo "Using ATLAS BLAS (OpenBLAS not available)"
+#fi
 
 # Create wheels output directory
 mkdir -p /mnt/mipsel-root/root/wheels
@@ -31,10 +44,25 @@ chroot /mnt/mipsel-root python3 -m virtualenv /shaketune-venv
 # Install build tools inside virtualenv
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip setuptools wheel build
 
+# Install additional build dependencies for numpy/scipy
+chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
+  Cython \
+  pybind11 \
+  pythran
+
 # Build Klippain Shake&Tune and its dependencies into wheels
 chroot /mnt/mipsel-root bash -c '
 cd /klippain-shaketune
-/shaketune-venv/bin/pip wheel -r requirements.txt -w /root/wheels'
+# Build numpy first (scipy depends on it)
+/shaketune-venv/bin/pip wheel numpy==1.26.2 -w /root/wheels --no-build-isolation
+# Then build scipy
+/shaketune-venv/bin/pip wheel scipy==1.11.4 -w /root/wheels --no-build-isolation
+# Build other requirements if they exist
+if [ -f requirements.txt ]; then
+  /shaketune-venv/bin/pip wheel -r requirements.txt -w /root/wheels
+fi'
+
+# /shaketune-venv/bin/pip wheel -r requirements.txt -w /root/wheels'
 
 # List built wheels
 chroot /mnt/mipsel-root ls /root/wheels

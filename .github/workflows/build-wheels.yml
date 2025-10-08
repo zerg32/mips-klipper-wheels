@@ -49,15 +49,16 @@ jobs:
       - name: Setup build environment
         run: sudo ./scripts/builder-setup.sh
 
+      - name: Build Shaketune wheels
+        run: sudo ./scripts/shaketune-build.sh
+
       - name: Build Klipper wheels
         run: sudo ./scripts/klipper-build.sh
 
       - name: Build Moonraker wheels
         run: sudo ./scripts/moonraker-build.sh
 
-      - name: Build Shaketune wheels
-        run: sudo ./scripts/shaketune-build.sh
-
+      
       - name: Upload wheels artifacts
         uses: actions/upload-artifact@v4
         with:
