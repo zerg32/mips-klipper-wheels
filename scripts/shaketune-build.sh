@@ -14,7 +14,11 @@ chroot /mnt/mipsel-root apt update
 chroot /mnt/mipsel-root apt install -y \
   python3-virtualenv python3-dev python3-numpy python3-matplotlib \
   libatlas-base-dev build-essential \
-  gfortran liblapack-dev libblas-dev pkg-config
+  gfortran liblapack-dev libblas-dev pkg-config \
+  libssl-dev \
+  libcurl4-openssl-dev \
+  ca-certificates
+
 
 # libopenblas-dev  - not available for MIPSEL
 
