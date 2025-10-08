@@ -17,8 +17,8 @@ chroot /mnt/mipsel-root apt install -y \
   gfortran liblapack-dev libblas-dev pkg-config \
   libssl-dev \
   libcurl4-openssl-dev \
-  ca-certificates
-
+  ca-certificates \
+  autoconf automake libtool m4 gettext
 
 # libopenblas-dev  - not available for MIPSEL
 
