@@ -35,39 +35,11 @@ cd /root/openblas-build/openblas-*
 # Check if architecture needs to be added
 if ! grep -q "Architecture:.*any" debian/control && ! grep -q "Architecture:.*mipsel" debian/control; then
   echo "Patching debian/control to add mipsel support..."
-  # Add mipsel to architecture list for all binary packages
-  sed -i "s/Architecture: \(.*\)/Architecture: \1 mipsel/" debian/control
-  # Or replace with any if too restrictive
-  sed -i "s/Architecture: [a-z0-9 -]*/Architecture: any/" debian/control
+  # Replace architecture with any for all packages
+  sed -i "/^Package:/,/^$/s/^Architecture: .*/Architecture: any/" debian/control
 fi
-cat debian/control
-'
-
-# Patch source files to fix MIPS compilation issues
-chroot /mnt/mipsel-root bash -c '
-cd /root/openblas-build/openblas-*
-
-# Fix missing GEMM_MULTITHREAD_THRESHOLD macro
-echo "Patching source to fix GEMM_MULTITHREAD_THRESHOLD..."
-find . -name "gemv.c" -o -name "gemm.c" | while read file; do
-  if grep -q "GEMM_MULTITHREAD_THRESHOLD" "$file" && ! grep -q "#ifndef GEMM_MULTITHREAD_THRESHOLD" "$file"; then
-    # Add default definition if not present
-    sed -i "1i\\
-#ifndef GEMM_MULTITHREAD_THRESHOLD\\
-#define GEMM_MULTITHREAD_THRESHOLD 4\\
-#endif" "$file"
-    echo "Patched: $file"
-  fi
-done
-
-# Alternative: patch the common.h or param.h if they exist
-if [ -f common.h ]; then
-  if ! grep -q "GEMM_MULTITHREAD_THRESHOLD" common.h; then
-    echo "#ifndef GEMM_MULTITHREAD_THRESHOLD" >> common.h
-    echo "#define GEMM_MULTITHREAD_THRESHOLD 4" >> common.h
-    echo "#endif" >> common.h
-  fi
-fi
+echo "=== debian/control architecture lines ==="
+grep "^Architecture:" debian/control
 '
 
 # Install build dependencies for OpenBLAS
@@ -82,17 +54,45 @@ apt build-dep -y openblas || apt install -y \
   debhelper
 '
 
+# Patch to use GENERIC target for MIPS
+chroot /mnt/mipsel-root bash -c '
+cd /root/openblas-build/openblas-*
+
+echo "Forcing GENERIC target for MIPSEL build..."
+
+# Create a simple patch to force GENERIC target
+cat > debian/patches/force-generic-mips.patch <<EOF
+Description: Force GENERIC target for MIPS architectures
+ MIPS-specific optimizations are incomplete, use GENERIC target
+Author: Build System
+--- a/Makefile.system
++++ b/Makefile.system
+@@ -1,3 +1,7 @@
++# Force GENERIC target for MIPS
++ifeq (\$(ARCH), mips)
++override TARGET = GENERIC
++endif
+ # This is a generic Makefile
+EOF
+
+# Add to patch series if it exists
+if [ -f debian/patches/series ]; then
+  echo "force-generic-mips.patch" >> debian/patches/series
+else
+  mkdir -p debian/patches
+  echo "force-generic-mips.patch" > debian/patches/series
+fi
+'
+
 # Build the package
 chroot /mnt/mipsel-root bash -c '
 cd /root/openblas-build/openblas-*
 
-echo "Building OpenBLAS for MIPSEL..."
-# Build with MIPS optimizations, skip tests, and set target
+echo "Building OpenBLAS for MIPSEL with GENERIC target..."
+# Build with generic target, skip tests
 export DEB_BUILD_OPTIONS="parallel=$(nproc) nocheck"
-export OPENBLAS_TARGET=MIPS24K
-export OPENBLAS_DYNAMIC_ARCH=0
-# Add CFLAGS to define missing macros
-export DEB_CFLAGS_APPEND="-DGEMM_MULTITHREAD_THRESHOLD=4"
+export TARGET=GENERIC
+export DYNAMIC_ARCH=0
 
 # Build binary packages only
 dpkg-buildpackage -b -uc -us 2>&1 | tee /root/openblas-build/build.log
