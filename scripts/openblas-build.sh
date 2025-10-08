@@ -18,7 +18,10 @@ chroot /mnt/mipsel-root apt install -y \
   fakeroot \
   dpkg-dev \
   pkg-config \
-  libgfortran-11-dev
+  libgfortran-11-dev \
+  libssl-dev \
+  libcurl4-openssl-dev \
+  ca-certificates
 
 # Create build directory
 mkdir -p /mnt/mipsel-root/root/openblas-build

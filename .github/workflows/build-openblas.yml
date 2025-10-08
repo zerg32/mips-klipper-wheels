@@ -2,7 +2,7 @@ name: Build OpenBLAS for MIPSEL
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, add-shaketune ]
     paths:
       - 'scripts/openblas-build.sh'
       - '.github/workflows/build-openblas.yml'

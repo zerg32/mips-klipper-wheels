@@ -2,7 +2,7 @@ name: Build MIPS Python Wheels
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, add-shaketune ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -57,7 +57,7 @@ jobs:
 
       - name: Build Shaketune wheels
         run: sudo ./scripts/shaketune-build.sh
-        
+
       - name: Upload wheels artifacts
         uses: actions/upload-artifact@v4
         with:
