@@ -55,6 +55,9 @@ jobs:
       - name: Build Moonraker wheels
         run: sudo ./scripts/moonraker-build.sh
 
+      - name: Build Shaketune wheels
+        run: sudo ./scripts/shaketune-build.sh
+        
       - name: Upload wheels artifacts
         uses: actions/upload-artifact@v4
         with:
