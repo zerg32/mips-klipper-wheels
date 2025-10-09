@@ -21,7 +21,6 @@ chroot /mnt/mipsel-root apt install -y \
   autoconf automake libtool m4 gettext \
   cmake \
   ninja-build \
-  cython3 \
   libffi-dev \
   libxml2-dev \
   libxslt1-dev \
@@ -56,6 +55,8 @@ chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
 # Build Klippain Shake&Tune and its dependencies into wheels
 chroot /mnt/mipsel-root bash -c '
 cd /klippain-shaketune
+# Ensure the virtualenv Cython is in PATH (newer version than system)
+export PATH=/shaketune-venv/bin:$PATH
 # Build numpy first (scipy depends on it)
 /shaketune-venv/bin/pip wheel numpy==1.26.2 -w /root/wheels --no-build-isolation
 # Install the built numpy wheel to make it available for pythran
