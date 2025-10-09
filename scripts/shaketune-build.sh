@@ -29,31 +29,30 @@ chroot /mnt/mipsel-root apt install -y \
   libpng-dev \
   libfreetype6-dev
 
+# Install GitHub CLI if not available
+if ! command -v gh &> /dev/null; then
+    echo "Installing GitHub CLI..."
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    apt update
+    apt install gh -y
+    echo "GitHub CLI installed successfully"
+else
+    echo "GitHub CLI is already installed"
+fi
+
 # Download and install OpenBLAS from latest successful build
 echo "Attempting to download OpenBLAS packages from latest build..."
 mkdir -p /tmp/openblas-download
 
-# Try to download OpenBLAS artifacts using GitHub CLI if available
-if command -v gh &> /dev/null; then
-  echo "Using GitHub CLI to download OpenBLAS artifacts..."
-  cd /tmp/openblas-download
-  if gh run download --repo zerg32/mips-klipper-wheels --name libopenblas-dev-mipsel 2>/dev/null; then
-    echo "Successfully downloaded OpenBLAS artifacts"
-    mkdir -p /mnt/mipsel-root/root/debs
-    cp *.deb /mnt/mipsel-root/root/debs/ 2>/dev/null || echo "No .deb files found in artifacts"
-  else
-    echo "Failed to download OpenBLAS artifacts via GitHub CLI"
-  fi
-  cd -
-else
-  echo "GitHub CLI not available, checking for local OpenBLAS packages..."
-  # Check for local packages in the workspace
-  if [ -f /home/serg/mips-klipper-wheels/openblas-debs/*.deb ]; then
-    echo "Found local OpenBLAS packages, copying to chroot..."
-    mkdir -p /mnt/mipsel-root/root/debs
-    cp /home/serg/mips-klipper-wheels/openblas-debs/*.deb /mnt/mipsel-root/root/debs/
-  fi
-fi
+echo "Using GitHub CLI to download OpenBLAS artifacts..."
+cd /tmp/openblas-download
+gh run download --repo zerg32/mips-klipper-wheels --name libopenblas-dev-mipsel 
+echo "Successfully downloaded OpenBLAS artifacts"
+mkdir -p /mnt/mipsel-root/root/debs
+cp *.deb /mnt/mipsel-root/root/debs/ 2>/dev/null || echo "No .deb files found in artifacts"
+cd -
+  
 
 # Install custom OpenBLAS if available (better performance than ATLAS)
 if [ -f /mnt/mipsel-root/root/debs/libopenblas-dev_*.deb ]; then
