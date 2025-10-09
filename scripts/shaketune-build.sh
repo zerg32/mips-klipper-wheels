@@ -56,7 +56,8 @@ cd /klippain-shaketune
 # Build numpy first (scipy depends on it)
 /shaketune-venv/bin/pip wheel numpy==1.26.2 -w /root/wheels --no-build-isolation
 # Install the built numpy wheel to make it available for pythran
-/shaketune-venv/bin/pip install /root/wheels/numpy-1.26.2-*.whl
+NUMPY_WHEEL=$(ls /root/wheels/numpy-1.26.2*.whl | head -n1)
+/shaketune-venv/bin/pip install "$NUMPY_WHEEL"
 # Now install pythran with the correct numpy version
 /shaketune-venv/bin/pip install pythran
 # Then build scipy
