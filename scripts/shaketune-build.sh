@@ -62,17 +62,35 @@ fi
 
 gh run download --repo zerg32/mips-klipper-wheels --name libopenblas-dev-mipsel 
 echo "Successfully downloaded OpenBLAS artifacts"
+echo "Available .deb files:"
+ls -la *.deb 2>/dev/null || echo "No .deb files found"
+
 mkdir -p /mnt/mipsel-root/root/debs
 cp *.deb /mnt/mipsel-root/root/debs/ 2>/dev/null || echo "No .deb files found in artifacts"
 cd -
+
+echo "Copied .deb files to chroot:"
+chroot /mnt/mipsel-root ls -la /root/debs/ 2>/dev/null || echo "No files in /root/debs"
   
 
 # Install custom OpenBLAS if available (better performance than ATLAS)
 if [ -f /mnt/mipsel-root/root/debs/libopenblas-dev_*.deb ]; then
-  echo "Installing custom OpenBLAS package..."
-  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0-pthread*.deb || apt-get install -f -y'
-  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-pthread*.deb || apt-get install -f -y'
+  echo "Installing custom OpenBLAS packages in correct order..."
+  
+  # Install base library first
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0_*.deb || apt-get install -f -y'
+  
+  # Install pthread variant
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0-pthread_*.deb || apt-get install -f -y'
+  
+  # Install development headers for pthread variant
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-pthread-dev_*.deb || apt-get install -f -y'
+  
+  # Install main development package (depends on libopenblas0)
   chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-dev_*.deb || apt-get install -f -y'
+  
+  # Fix any remaining dependency issues
+  chroot /mnt/mipsel-root apt-get install -f -y
 else
   echo "Using ATLAS BLAS (OpenBLAS not available)"
 fi
