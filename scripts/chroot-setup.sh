@@ -20,7 +20,7 @@ apt update && apt install -y \
   ca-certificates
 
 # Enable QEMU MIPS
-update-binfmts --enable qemu-mips
+update-binfmts --enable qemu-mipsel
 
 # Create MIPSEL rootfs directory
 mkdir -p /mnt/mipsel-root
