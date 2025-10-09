@@ -29,13 +29,44 @@ chroot /mnt/mipsel-root apt install -y \
   libpng-dev \
   libfreetype6-dev
 
+# Download and install OpenBLAS from latest successful build
+echo "Attempting to download OpenBLAS packages from latest build..."
+mkdir -p /tmp/openblas-download
+
+# Try to download OpenBLAS artifacts using GitHub CLI if available
+if command -v gh &> /dev/null; then
+  echo "Using GitHub CLI to download OpenBLAS artifacts..."
+  cd /tmp/openblas-download
+  if gh run download --repo zerg32/mips-klipper-wheels --name libopenblas-dev-mipsel 2>/dev/null; then
+    echo "Successfully downloaded OpenBLAS artifacts"
+    mkdir -p /mnt/mipsel-root/root/debs
+    cp *.deb /mnt/mipsel-root/root/debs/ 2>/dev/null || echo "No .deb files found in artifacts"
+  else
+    echo "Failed to download OpenBLAS artifacts via GitHub CLI"
+  fi
+  cd -
+else
+  echo "GitHub CLI not available, checking for local OpenBLAS packages..."
+  # Check for local packages in the workspace
+  if [ -f /home/serg/mips-klipper-wheels/openblas-debs/*.deb ]; then
+    echo "Found local OpenBLAS packages, copying to chroot..."
+    mkdir -p /mnt/mipsel-root/root/debs
+    cp /home/serg/mips-klipper-wheels/openblas-debs/*.deb /mnt/mipsel-root/root/debs/
+  fi
+fi
+
 # Install custom OpenBLAS if available (better performance than ATLAS)
-#if [ -f /mnt/mipsel-root/root/debs/libopenblas-dev_*.deb ]; then
-#  echo "Installing custom OpenBLAS package..."
-#  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-dev_*.deb || apt-get install -f -y'
-#else
-#  echo "Using ATLAS BLAS (OpenBLAS not available)"
-#fi
+if [ -f /mnt/mipsel-root/root/debs/libopenblas-dev_*.deb ]; then
+  echo "Installing custom OpenBLAS package..."
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0-pthread*.deb || apt-get install -f -y'
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-pthread*.deb || apt-get install -f -y'
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-dev_*.deb || apt-get install -f -y'
+else
+  echo "Using ATLAS BLAS (OpenBLAS not available)"
+fi
+
+# Cleanup
+rm -rf /tmp/openblas-download
 
 # Create wheels output directory
 mkdir -p /mnt/mipsel-root/root/wheels
