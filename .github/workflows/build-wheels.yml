@@ -36,19 +36,26 @@ jobs:
           chmod +x make-scripts-executable.sh
           ./make-scripts-executable.sh
 
-      - name: Setup MIPS chroot environment
-        run: |
-          sudo ./scripts/chroot-setup.sh
-          # Remove any potentially cached dynamic/temporary files
-          sudo rm -rf /mnt/mipsel-root/tmp/*
-          sudo rm -rf /mnt/mipsel-root/var/cache/apt/*
-          sudo rm -rf /mnt/mipsel-root/var/lib/apt/lists/*
+      - name: Cache chroot and builder setup
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: /tmp/mips-klipper-cache
+          key: mips-setup-${{ hashFiles('scripts/chroot-setup.sh', 'scripts/builder-setup.sh') }}
+          restore-keys: |
+            mips-setup-
 
-      - name: Setup build environment
-        run: sudo ./scripts/builder-setup.sh
+      - name: Setup MIPS build environment with caching
+        run: sudo ./scripts/cache-helper.sh full-setup
+
+      - name: Authenticate GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
       - name: Build Shaketune wheels
-        run: sudo ./scripts/shaketune-build.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: sudo -E ./scripts/shaketune-build.sh
 
       - name: Build Klipper wheels
         run: sudo ./scripts/klipper-build.sh

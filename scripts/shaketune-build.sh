@@ -47,6 +47,19 @@ mkdir -p /tmp/openblas-download
 
 echo "Using GitHub CLI to download OpenBLAS artifacts..."
 cd /tmp/openblas-download
+
+# Ensure GitHub CLI is authenticated
+if ! gh auth status &>/dev/null; then
+    echo "GitHub CLI not authenticated. Attempting to authenticate..."
+    if [ -n "$GITHUB_TOKEN" ]; then
+        echo "$GITHUB_TOKEN" | gh auth login --with-token
+    else
+        echo "Error: GITHUB_TOKEN environment variable not set"
+        echo "Please set GITHUB_TOKEN or run 'gh auth login' manually"
+        exit 1
+    fi
+fi
+
 gh run download --repo zerg32/mips-klipper-wheels --name libopenblas-dev-mipsel 
 echo "Successfully downloaded OpenBLAS artifacts"
 mkdir -p /mnt/mipsel-root/root/debs
