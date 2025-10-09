@@ -78,24 +78,28 @@ chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip setuptools
 
 # Install build dependencies for numpy/scipy (except pythran which needs numpy)
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
-  Cython \
+  "Cython>=0.29.32,<3.0" \
   pybind11 \
-  meson-python
+  meson-python \
+  pkgconfig
 
 # Build Klippain Shake&Tune and its dependencies into wheels
 chroot /mnt/mipsel-root bash -c '
 cd /klippain-shaketune
 # Ensure the virtualenv Cython is in PATH (newer version than system)
 export PATH=/shaketune-venv/bin:$PATH
-# Build numpy first (scipy depends on it)
-/shaketune-venv/bin/pip wheel numpy==1.26.2 -w /root/wheels --no-build-isolation
+# Set environment variables for proper compilation
+export NPY_NUM_BUILD_JOBS=1
+export CFLAGS="-Wno-error"
+# Build numpy first (scipy depends on it) - use a version compatible with Python 3.11
+/shaketune-venv/bin/pip wheel numpy==1.24.4 -w /root/wheels --no-build-isolation
 # Install the built numpy wheel to make it available for pythran
-NUMPY_WHEEL=$(ls /root/wheels/numpy-1.26.2*.whl | head -n1)
+NUMPY_WHEEL=$(ls /root/wheels/numpy-1.24.4*.whl | head -n1)
 /shaketune-venv/bin/pip install "$NUMPY_WHEEL"
 # Now install pythran with the correct numpy version
 /shaketune-venv/bin/pip install pythran
-# Then build scipy
-/shaketune-venv/bin/pip wheel scipy==1.11.4 -w /root/wheels --no-build-isolation
+# Then build scipy - use compatible version
+/shaketune-venv/bin/pip wheel scipy==1.10.1 -w /root/wheels --no-build-isolation
 # Build other requirements if they exist
 if [ -f requirements.txt ]; then
   /shaketune-venv/bin/pip wheel -r requirements.txt -w /root/wheels
