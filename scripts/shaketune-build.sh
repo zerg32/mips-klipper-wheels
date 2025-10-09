@@ -77,12 +77,13 @@ chroot /mnt/mipsel-root ls -la /root/debs/ 2>/dev/null || echo "No files in /roo
 if [ -f /mnt/mipsel-root/root/debs/libopenblas-dev_*.deb ]; then
   echo "Installing custom OpenBLAS packages in correct order..."
   
-  # Install base library first
-  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0_*.deb || apt-get install -f -y'
-  
   # Install pthread variant
   chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0-pthread_*.deb || apt-get install -f -y'
   
+  # Install base library first
+  chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas0_*.deb || apt-get install -f -y'
+
+
   # Install development headers for pthread variant
   chroot /mnt/mipsel-root bash -c 'cd /root/debs && dpkg -i libopenblas-pthread-dev_*.deb || apt-get install -f -y'
   
