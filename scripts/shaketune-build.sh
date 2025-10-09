@@ -45,17 +45,20 @@ chroot /mnt/mipsel-root python3 -m virtualenv /shaketune-venv
 # Install build tools inside virtualenv
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip setuptools wheel build
 
-# Install additional build dependencies for numpy/scipy
+# Install build dependencies for numpy/scipy (except pythran which needs numpy)
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
   Cython \
-  pybind11 \
-  pythran
+  pybind11
 
 # Build Klippain Shake&Tune and its dependencies into wheels
 chroot /mnt/mipsel-root bash -c '
 cd /klippain-shaketune
 # Build numpy first (scipy depends on it)
 /shaketune-venv/bin/pip wheel numpy==1.26.2 -w /root/wheels --no-build-isolation
+# Install the built numpy wheel to make it available for pythran
+/shaketune-venv/bin/pip install /root/wheels/numpy-1.26.2-*.whl
+# Now install pythran with the correct numpy version
+/shaketune-venv/bin/pip install pythran
 # Then build scipy
 /shaketune-venv/bin/pip wheel scipy==1.11.4 -w /root/wheels --no-build-isolation
 # Build other requirements if they exist
