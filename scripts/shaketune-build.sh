@@ -104,8 +104,8 @@ mkdir -p /mnt/mipsel-root/root/wheels
 # Create and activate virtualenv
 chroot /mnt/mipsel-root python3 -m virtualenv /shaketune-venv
 
-# Install build tools inside virtualenv
-chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip setuptools wheel build
+# Install build tools inside virtualenv with compatible versions
+chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip "setuptools<60.0" wheel build
 
 # Install build dependencies for numpy/scipy (except pythran which needs numpy)
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
@@ -122,15 +122,17 @@ export PATH=/shaketune-venv/bin:$PATH
 # Set environment variables for proper compilation
 export NPY_NUM_BUILD_JOBS=1
 export CFLAGS="-Wno-error"
-# Build numpy first (scipy depends on it) - use a version compatible with Python 3.11
-/shaketune-venv/bin/pip wheel numpy==1.24.4 -w /root/wheels --no-build-isolation
+export PYTHONWARNINGS="ignore::DeprecationWarning"
+export NPY_DISTUTILS_APPEND_FLAGS=1
+# Build numpy first (scipy depends on it) - use last version before distutils issues
+/shaketune-venv/bin/pip wheel numpy==1.23.5 -w /root/wheels --no-build-isolation
 # Install the built numpy wheel to make it available for pythran
-NUMPY_WHEEL=$(ls /root/wheels/numpy-1.24.4*.whl | head -n1)
+NUMPY_WHEEL=$(ls /root/wheels/numpy-1.23.5*.whl | head -n1)
 /shaketune-venv/bin/pip install "$NUMPY_WHEEL"
 # Now install pythran with the correct numpy version
 /shaketune-venv/bin/pip install pythran
 # Then build scipy - use compatible version
-/shaketune-venv/bin/pip wheel scipy==1.10.1 -w /root/wheels --no-build-isolation
+/shaketune-venv/bin/pip wheel scipy==1.9.3 -w /root/wheels --no-build-isolation
 # Build other requirements if they exist
 if [ -f requirements.txt ]; then
   /shaketune-venv/bin/pip wheel -r requirements.txt -w /root/wheels
