@@ -48,7 +48,9 @@ chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip setuptools
 # Install build dependencies for numpy/scipy (except pythran which needs numpy)
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
   Cython \
-  pybind11
+  pybind11 \
+  meson-python \
+  ninja
 
 # Build Klippain Shake&Tune and its dependencies into wheels
 chroot /mnt/mipsel-root bash -c '
