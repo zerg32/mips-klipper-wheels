@@ -21,6 +21,7 @@ chroot /mnt/mipsel-root apt install -y \
   autoconf automake libtool m4 gettext \
   cmake \
   ninja-build \
+  cython3 \
   libffi-dev \
   libxml2-dev \
   libxslt1-dev \
