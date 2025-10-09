@@ -7,20 +7,24 @@ CACHE_DIR="/tmp/mips-klipper-cache"
 CHROOT_CACHE_DIR="$CACHE_DIR/chroot"
 BUILDER_CACHE_DIR="$CACHE_DIR/builder"
 
-# Function to calculate hash of multiple files
+# Function to calculate hash of multiple files (matches GitHub Actions hashFiles)
 calculate_hash() {
     local files=("$@")
-    local combined_hash=""
+    local temp_file=$(mktemp)
     
+    # Concatenate all file contents (like GitHub Actions hashFiles does)
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
-            combined_hash="${combined_hash}$(sha256sum "$file" | cut -d' ' -f1)"
+            cat "$file" >> "$temp_file"
         else
             echo "Warning: File $file not found" >&2
         fi
     done
     
-    echo -n "$combined_hash" | sha256sum | cut -d' ' -f1
+    # Calculate SHA256 of combined content
+    local hash=$(sha256sum "$temp_file" | cut -d' ' -f1)
+    rm -f "$temp_file"
+    echo "$hash"
 }
 
 # Function to create cache archive
@@ -74,7 +78,7 @@ setup_chroot_cached() {
     local hash=$(calculate_hash "${script_files[@]}")
     local cache_file="$CHROOT_CACHE_DIR/chroot-$hash.tar.gz"
     
-    echo "Chroot setup cache key: $hash"
+    echo "Chroot setup cache key: chroot-$hash"
     
     if restore_cache "$cache_file" "/mnt/mipsel-root" "chroot"; then
         echo "Chroot environment restored from cache"
@@ -106,11 +110,12 @@ setup_chroot_cached() {
 
 # Function to setup builder environment with caching
 setup_builder_cached() {
-    local script_files=("scripts/builder-setup.sh" "scripts/chroot-setup.sh")
+    local script_files=("scripts/chroot-setup.sh" "scripts/builder-setup.sh")
     local hash=$(calculate_hash "${script_files[@]}")
     local cache_file="$BUILDER_CACHE_DIR/builder-$hash.tar.gz"
     
-    echo "Builder setup cache key: $hash"
+    echo "Builder setup cache key: mips-setup-$hash"
+    echo "Cache file: $cache_file"
     
     # Check if we have a cached builder environment
     if [ -f "$cache_file" ] && [ -d "/mnt/mipsel-root" ]; then
@@ -141,11 +146,11 @@ setup_builder_cached() {
 
 # Function to restore complete builder environment
 restore_builder_cached() {
-    local script_files=("scripts/builder-setup.sh" "scripts/chroot-setup.sh")
+    local script_files=("scripts/chroot-setup.sh" "scripts/builder-setup.sh")
     local hash=$(calculate_hash "${script_files[@]}")
     local cache_file="$BUILDER_CACHE_DIR/builder-$hash.tar.gz"
     
-    echo "Builder restore cache key: $hash"
+    echo "Builder restore cache key: mips-setup-$hash"
     
     if restore_cache "$cache_file" "/mnt/mipsel-root" "builder environment"; then
         echo "Complete builder environment restored from cache"
@@ -207,13 +212,20 @@ case "${1:-}" in
         rm -rf "$CACHE_DIR"
         echo "All caches cleaned"
         ;;
+    "test-hash")
+        # Test hash calculation to verify it matches GitHub Actions
+        local script_files=("scripts/chroot-setup.sh" "scripts/builder-setup.sh")
+        local hash=$(calculate_hash "${script_files[@]}")
+        echo "Hash for GitHub Actions key: mips-setup-$hash"
+        ;;
     *)
-        echo "Usage: $0 {chroot|builder|restore-builder|full-setup|clean-cache}"
+        echo "Usage: $0 {chroot|builder|restore-builder|full-setup|clean-cache|test-hash}"
         echo "  chroot         - Setup chroot with caching"
         echo "  builder        - Setup builder tools with caching"
         echo "  restore-builder - Try to restore complete builder environment"
         echo "  full-setup     - Complete setup with optimal caching"
         echo "  clean-cache    - Remove all cached data"
+        echo "  test-hash      - Show hash that should match GitHub Actions"
         exit 1
         ;;
 esac
