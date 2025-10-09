@@ -20,6 +20,7 @@ chroot /mnt/mipsel-root apt install -y \
   ca-certificates \
   autoconf automake libtool m4 gettext \
   cmake \
+  ninja-build \
   libffi-dev \
   libxml2-dev \
   libxslt1-dev \
@@ -49,8 +50,7 @@ chroot /mnt/mipsel-root /shaketune-venv/bin/pip install --upgrade pip setuptools
 chroot /mnt/mipsel-root /shaketune-venv/bin/pip install \
   Cython \
   pybind11 \
-  meson-python \
-  ninja
+  meson-python
 
 # Build Klippain Shake&Tune and its dependencies into wheels
 chroot /mnt/mipsel-root bash -c '
