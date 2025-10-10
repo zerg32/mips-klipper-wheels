@@ -19,8 +19,11 @@ apt update && apt install -y \
   curl \
   ca-certificates
 
-# Enable QEMU MIPS
-update-binfmts --enable qemu-mips
+# Ensure binfmt configurations are properly loaded
+systemctl restart systemd-binfmt
+
+# Enable QEMU MIPSEL (little-endian MIPS)
+update-binfmts --enable qemu-mipsel
 
 # Create MIPSEL rootfs directory
 mkdir -p /mnt/mipsel-root

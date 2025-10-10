@@ -29,7 +29,8 @@ chroot /mnt/mipsel-root /moonraker-venv/bin/pip install --upgrade pip setuptools
 chroot /mnt/mipsel-root bash -c '
 cd /moonraker
 /moonraker-venv/bin/pip wheel . -w /root/wheels
-/moonraker-venv/bin/pip wheel -r scripts/moonraker-requirements.txt -w /root/wheels'
+/moonraker-venv/bin/pip wheel -r scripts/moonraker-requirements.txt -w /root/wheels
+/moonraker-venv/bin/pip wheel -r scripts/moonraker-speedups.txt -w /root/wheels'
 
 # List built wheels
 chroot /mnt/mipsel-root ls /root/wheels
