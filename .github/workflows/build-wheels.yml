@@ -36,9 +36,7 @@ jobs:
           chmod +x make-scripts-executable.sh
           ./make-scripts-executable.sh
 
-      # Only run setup if cache miss
       - name: Setup MIPS chroot environment
-        if: steps.cache-chroot.outputs.cache-hit != 'true'
         run: |
           sudo ./scripts/chroot-setup.sh
           # Remove any potentially cached dynamic/temporary files
