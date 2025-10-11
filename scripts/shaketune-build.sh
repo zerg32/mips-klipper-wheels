@@ -125,6 +125,7 @@ export NPY_NUM_BUILD_JOBS=1
 export CFLAGS="-Wno-error"
 export PYTHONWARNINGS="ignore::DeprecationWarning"
 export NPY_DISTUTILS_APPEND_FLAGS=1
+export OPENBLAS_NUM_THREADS=1
 # Build numpy first (scipy depends on it) - use last version before distutils issues
 /shaketune-venv/bin/pip wheel numpy==1.23.5 -w /root/wheels --no-build-isolation
 # Install the built numpy wheel to make it available for pythran
