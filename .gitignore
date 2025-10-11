@@ -1,0 +1,34 @@
+# Debian packages
+*.deb
+
+# Temporary download directories
+openblas-artifact.zip
+/tmp/openblas-download/
+
+# Build artifacts
+/mnt/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+shaketune-venv/
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
