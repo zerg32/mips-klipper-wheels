@@ -18,6 +18,9 @@ The project uses GitHub Actions to create a MIPS (little-endian) chroot environm
 
 - **scripts/klipper-build.sh**: Clones Klipper repository and builds wheels for Klipper and its dependencies
 - **scripts/moonraker-build.sh**: Clones Moonraker repository and builds wheels for Moonraker and its dependencies
+- **scripts/klipperscreen-build.sh**: Clones KlipperScreen repository and builds wheels for KlipperScreen and its dependencies
+- **scripts/shaketune-build.sh**: Clones Klippain Shake&Tune repository and builds wheels including numpy and scipy
+- **scripts/openblas-build.sh**: Builds optimized OpenBLAS library for better performance with scientific packages
 - **scripts/generate-index.sh**: Creates a PEP 503 compliant package index from the built wheels
 
 ## How It Works
