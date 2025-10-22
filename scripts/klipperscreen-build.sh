@@ -57,7 +57,7 @@ cd /klipperscreen
 # Set environment variables for proper compilation
 export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/share/pkgconfig
 export CFLAGS="-Wno-error"
-export PYTHONWARNINGS="ignore::DeprecationWarning"
+export PYTHONWARNINGS="ignore::DeprecationWarning"'
 
 # Build the main requirements
 if [ -f scripts/KlipperScreen-requirements.txt ]; then
