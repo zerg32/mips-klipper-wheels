@@ -39,7 +39,8 @@ chroot /mnt/mipsel-root apt install -y \
   librsvg2-dev \
   libgdk-pixbuf2.0-dev \
   libatlas-base-dev \
-  gfortran
+  gfortran \
+  libsystemd-dev 
 
 # Create wheels output directory
 mkdir -p /mnt/mipsel-root/root/wheels
@@ -67,23 +68,6 @@ fi
 if [ -f requirements.txt ]; then
   /klipperscreen-venv/bin/pip wheel -r requirements.txt -w /root/wheels
 fi
-
-# Build specific packages that KlipperScreen needs
-# These are common dependencies for KlipperScreen
-/klipperscreen-venv/bin/pip wheel \
-  requests \
-  websocket-client \
-  netifaces \
-  Pillow \
-  jinja2 \
-  numpy \
-  matplotlib \
-  humanize \
-  pycairo \
-  PyGObject \
-  six \
-  -w /root/wheels || true
-'
 
 # List built wheels
 chroot /mnt/mipsel-root ls /root/wheels
