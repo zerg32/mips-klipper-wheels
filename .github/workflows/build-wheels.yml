@@ -36,14 +36,14 @@ jobs:
           chmod +x make-scripts-executable.sh
           ./make-scripts-executable.sh
 
-      - name: Cache chroot and builder setup
-        id: cache-setup
-        uses: actions/cache@v4
-        with:
-          path: /tmp/mips-klipper-cache
-          key: mips-setup-${{ hashFiles('scripts/chroot-setup.sh', 'scripts/builder-setup.sh') }}
-          restore-keys: |
-            mips-setup-
+#      - name: Cache chroot and builder setup
+#        id: cache-setup
+#        uses: actions/cache@v4
+#        with:
+#          path: /tmp/mips-klipper-cache
+#          key: mips-setup-${{ hashFiles('scripts/chroot-setup.sh', 'scripts/builder-setup.sh') }}
+#          restore-keys: |
+#            mips-setup-
 
       - name: Setup MIPS build environment with caching
         run: sudo ./scripts/cache-helper.sh full-setup
