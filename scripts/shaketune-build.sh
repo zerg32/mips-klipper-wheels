@@ -127,9 +127,9 @@ export PYTHONWARNINGS="ignore::DeprecationWarning"
 export NPY_DISTUTILS_APPEND_FLAGS=1
 export OPENBLAS_NUM_THREADS=1
 # Build numpy first (scipy depends on it) - use last version before distutils issues
-/shaketune-venv/bin/pip wheel numpy==1.26.2 -w /root/wheels --no-build-isolation
+/shaketune-venv/bin/pip wheel numpy==1.26.4 -w /root/wheels --no-build-isolation
 # Install the built numpy wheel to make it available for pythran
-NUMPY_WHEEL=$(ls /root/wheels/numpy-1.26.2*.whl | head -n1)
+NUMPY_WHEEL=$(ls /root/wheels/numpy-1.26.4*.whl | head -n1)
 /shaketune-venv/bin/pip install "$NUMPY_WHEEL"
 # Now install pythran with the correct numpy version
 /shaketune-venv/bin/pip install pythran
